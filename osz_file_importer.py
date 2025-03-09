@@ -17,7 +17,7 @@ class Beatmap:
         )
         root.destroy()
 
-    def get_oszfile_list(self, extract_path):
+    def get_oszfile_list(self, extract_path):   # Extract the osz file
         if self.file_path:
             print("选择的文件路径:", self.file_path)
             osz = zipfile.ZipFile(self.file_path,'r')
@@ -25,11 +25,11 @@ class Beatmap:
             print("解压完成")
             osu_files = []
 
-            for root, dirs, files in os.walk(extract_path, topdown=False):
+            for root, dirs, files in os.walk(extract_path, topdown=False):  # Get all osu files
                 for name in files:
                     osu_files.append(os.path.join(root, name))
                     
-            return osu_files
+            return osu_files    # Return the list of osu files
         else:
             print("用户取消了选择")
             pass

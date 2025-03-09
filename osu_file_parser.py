@@ -18,10 +18,10 @@ class OsuParser:
 
 
     def __init__(self, file_path):
-        self.file_path = file_path      #Read osu file into list
+        self.file_path = file_path      # Read osu file into list
         fp = open(self.file_path, 'r', encoding = "utf-8")
         self.osufile = fp.readlines()
-        fp.close()  #end of reading osu file into list
+        fp.close()  # End of reading osu file into list
         self.General = self.get_beatmap_section("General")
         self.Editor = self.get_beatmap_section("Editor")
         self.Metadata = self.get_beatmap_section("Metadata")
@@ -40,7 +40,7 @@ class OsuParser:
 
         if self.beatmap_section_index in self.list_type_sections:
 
-            for i in range(section_index + 1, len(self.osufile)):   #parse Comma-separated lists
+            for i in range(section_index + 1, len(self.osufile)):   # Parse Comma-separated lists
                 if self.osufile[i] == '\n':
                     break
                 else:
@@ -48,7 +48,7 @@ class OsuParser:
 
             return self.section_list
         
-        elif self.beatmap_section_index in self.dict_type_sections:     #parse key-value pairs
+        elif self.beatmap_section_index in self.dict_type_sections:     # Parse key-value pairs
 
             for i in range(section_index + 1, len(self.osufile)):
                 if self.osufile[i] == '\n':

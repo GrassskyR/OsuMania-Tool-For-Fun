@@ -14,20 +14,20 @@ def main():
 
     extracted_files = bm.get_oszfile_list(tmp.name)
 
-    for file in extracted_files:
+    for file in extracted_files:    # Get list of all osu files
         if os.path.basename(file).endswith(".osu"):
             print("选择的osu文件:", file)
             osu_file_list.append(file)
         else:
             continue
     
-    for osu_file in osu_file_list:
+    for osu_file in osu_file_list:  # Modify the osu file
         op = osu_file_parser.OsuParser(osu_file)
         bme = osu_beatmap_editor.OsuBeatmapEditor(op)
         bme.random_remove_hitobjects()
         bme.save_osu_file(tmp.name)
 
-    osz_name = os.path.basename(bm.file_path).replace(".osz", "_edited.osz")
+    osz_name = os.path.basename(bm.file_path)    # Export the osz file to current directory
     osz = osz_file_exporter.OszExporter(tmp.name)
     osz.compress_osz(osz_name)
     

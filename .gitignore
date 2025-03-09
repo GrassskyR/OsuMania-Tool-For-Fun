@@ -175,3 +175,4 @@ cython_debug/
 *.onefile-build
 *.dist
 *.build
+*.osz
