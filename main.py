@@ -1,10 +1,11 @@
-import random as rd
 import os
 from tempfile import TemporaryDirectory
 import osz_file_importer
 import osu_file_parser
 import osu_beatmap_editor
 import osz_file_exporter
+import tkinter as tk
+from ui import MyApplication
 
 def main():    
 
@@ -21,10 +22,25 @@ def main():
         else:
             continue
     
+    root = tk.Tk()
+    root.title("osu! Beatmap Editor")
+    root.geometry("400x100")
+    app = MyApplication(root)
+    app.mainloop()
+
     for osu_file in osu_file_list:  # Modify the osu file
         op = osu_file_parser.OsuParser(osu_file)
         bme = osu_beatmap_editor.OsuBeatmapEditor(op)
-        bme.random_remove_hitobjects()
+
+        if app.select_operation == 0:
+            print("未选择操作")
+            break
+        elif app.select_operation == 1:
+            print("del")
+            bme.random_remove_hitobjects()
+        elif app.select_operation == 2:
+            print("add")
+            bme.random_add_hitobjects()
         bme.save_osu_file(tmp.name)
 
     osz_name = os.path.basename(bm.file_path)    # Export the osz file to current directory
