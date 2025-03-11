@@ -1,4 +1,5 @@
 import tkinter as tk
+import tkinter.simpledialog
 import osu_file_parser
 import osu_beatmap_editor
 import os
@@ -6,6 +7,7 @@ import os
 class MyApplication(tk.Frame):
 
     select_operation = 0
+    column_counmt = 0
 
     def __init__(self, master = None):
         super().__init__(master)
@@ -24,12 +26,15 @@ class MyApplication(tk.Frame):
     def del_op(self):
         print("Chosed del")
         self.select_operation = 1
+        self.column_counmt = tkinter.simpledialog.askinteger("删除键数", "请输入要删除的键数")
         self.quit()
 
     def add_op(self):
         print("Chosed add")
         self.select_operation = 2
+        self.column_counmt = tkinter.simpledialog.askinteger("增加键数", "请输入要增加的键数")
         self.quit()
+        
 
 def main():
     root = tk.Tk()

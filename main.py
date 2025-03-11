@@ -30,6 +30,11 @@ def main():
 
     for osu_file in osu_file_list:  # Modify the osu file
         op = osu_file_parser.OsuParser(osu_file)
+
+        if op.General["Mode"] != "3":   # Skip if the osu file is not a mania map
+            print("Not a Mania Map")
+            continue
+
         bme = osu_beatmap_editor.OsuBeatmapEditor(op)
 
         if app.select_operation == 0:
@@ -37,10 +42,10 @@ def main():
             break
         elif app.select_operation == 1:
             print("del")
-            bme.random_remove_hitobjects()
+            bme.random_remove_hitobjects(app.column_counmt)
         elif app.select_operation == 2:
             print("add")
-            bme.random_add_hitobjects()
+            bme.random_add_hitobjects(app.column_counmt)
         bme.save_osu_file(tmp.name)
 
     osz_name = os.path.basename(bm.file_path)    # Export the osz file to current directory
