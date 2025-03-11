@@ -75,14 +75,14 @@ class OsuBeatmapEditor():
             f.write("\n")
             f.close()
         
-    def random_remove_hitobjects(self):
+    def random_remove_hitobjects(self, del_column : int):
 
         LeftIndex = 0
         RightIndex = 0
         i = 0
         hitobjects_in_a_row = 0
 
-        self.osufile.Metadata["Version"] += " Removed Edited"  # Change the version of the map
+        self.osufile.Metadata["Version"] += f" Removed {del_column} Note"  # Change the version of the map
 
         HitObjectsSectionLength = len(self.osufile.HitObjects)
         random_index = 0
@@ -97,27 +97,44 @@ class OsuBeatmapEditor():
 
                 if hitobjects_in_a_row == 1:    # If there is only one hitobject in a row
                     LeftIndex = RightIndex
-                    continue    # Skip to the next iteration
+                    continue    # Skip deleting the hitobject
 
-                random_index = rd.randint(LeftIndex,RightIndex - 1)   # Randomly select a hitobject in the row
+                available_columns = []  # List to store the available columns
 
-                self.osufile.HitObjects[random_index] = ""  # Remove the hitobject
+                for j in range(LeftIndex, RightIndex):
+                    available_columns.append(j)
 
-                LeftIndex = RightIndex
+                for j in range(0, del_column):  # Randomly delete hitobjects
+
+                    if len(available_columns) == 1: # Left one hitobject in the row
+                        break
+
+                    random_index = rd.choice(available_columns)    # Randomly select a hitobject to delete
+                    available_columns.remove(random_index)    # Remove the hitobject from the list
+                    self.osufile.HitObjects[random_index] = ""   # Delete the hitobject
+                    
+                LeftIndex = RightIndex  # Move to the next row
 
             if RightIndex == HitObjectsSectionLength - 1:   # Deal with situation when the last element is reached
 
-                hitobjects_in_a_row = RightIndex - LeftIndex + 1
-
+                hitobjects_in_a_row = RightIndex - LeftIndex + 1    # Copied from above
+ 
                 if hitobjects_in_a_row == 1:
                     LeftIndex = RightIndex
                     continue
+                
+                for j in range(0, del_column):  
 
-                random_index = rd.randint(LeftIndex,RightIndex - 1)
+                    if len(available_columns) == 1: 
+                        break
 
-                self.osufile.HitObjects[random_index] = ""
+                    random_index = rd.choice(available_columns)    
+                    available_columns.remove(random_index)    
+                    self.osufile.HitObjects[random_index] = ""   
+                    
+                LeftIndex = RightIndex  # Move to the next row
 
-                LeftIndex = RightIndex
+                LeftIndex = RightIndex  
 
         for hitobject in self.osufile.HitObjects:
             if hitobject == "":
@@ -125,108 +142,131 @@ class OsuBeatmapEditor():
 
         print("Done")
 
-    def random_add_hitobjects(self):
+    def random_add_hitobjects(self, add_column : int):
 
         LeftIndex = 0
         RightIndex = 0
         i = 0
         hitobjects_in_a_row = 0
+        
 
-        self.osufile.Metadata["Version"] += " Added Edited"
+        self.osufile.Metadata["Version"] += f" Added {add_column} Note"
 
         key_column = self.osufile.Difficulty["CircleSize"]    # Get the number of key columns of the map
         
         random_column = 0
         x = 0
 
-        while i < len(self.osufile.HitObjects) - 1:
+        while i < len(self.osufile.HitObjects) - 1:   # Loop through the hitobjects
+
             i = i + 1
             RightIndex = i
+            hitobjects_column = []
+            time = self.osufile.HitObjects[LeftIndex][2]
 
             if self.osufile.HitObjects[LeftIndex][2] != self.osufile.HitObjects[RightIndex][2]: # Find hitobjects in the same row
 
                 hitobjects_in_a_row = RightIndex - LeftIndex    # Calculate the number of hitobjects in a row
 
-                for j in range(LeftIndex, RightIndex):
-                    if self.is_note_a_ln(self.osufile.HitObjects[j]):    # If the hitobject is a long note
-                        ln_info = {}    # Create a dictionary to store the long note info
-                        ln_info["LnStartTime"] = int(self.osufile.HitObjects[j][2])
-                        ln_info["LnEndTime"] = int((self.osufile.HitObjects[j][5]).split(":")[0])
-                        self.column_blacklist[self.get_hitobject_column_index(self.osufile.HitObjects[j])] = ln_info    # Add the LN info to the blacklist to prevent stack notes
-
-                # print(self.column_blacklist.values())
-
                 if hitobjects_in_a_row == key_column:   # Skip full column
                     LeftIndex = RightIndex
-                    # print("Full !!")
-                    continue
-                
-                random_column = self.get_random_column(LeftIndex, RightIndex, self.column_blacklist)    # Get a random column
-
-                if random_column == 0:
-                    # print("Full !!")
-                    LeftIndex = RightIndex
                     continue
 
-                time = self.osufile.HitObjects[LeftIndex][2]    # Get the time of the hitobject in the same row
-                x = self.generate_x_value(random_column)   # Generate the x value of the hitobject
-                # print(f"x = {x} \nrandom = {random_column}")
-                self.osufile.HitObjects.insert(LeftIndex, [str(x), "192", time, "1", "0", "0:0:0:0:"])    # Insert the hitobject
-                RightIndex = RightIndex + 1
-                LeftIndex = RightIndex
+                ln_info = self.__find_ln_in_row(self.osufile.HitObjects, LeftIndex, RightIndex) #check ln stack
+                self.column_blacklist.update(ln_info)
 
-    
+                # column_hitojects = self.__get_hitobject_column_index_list(self.osufile.HitObjects, LeftIndex, RightIndex)
+
+                empty_columns = self.__get_empty_column(LeftIndex, RightIndex, self.column_blacklist)    # Get the empty columns in the row
+
+                for j in range(0, add_column):  # Randomly add hitobjects
+                    
+
+                    if len(empty_columns) == 0:
+                        break
+
+                    if j == key_column: # Skip if the number of hitobjects added is equal to the number of key columns
+                        break
+
+                    random_column = rd.choice(empty_columns)    # Randomly select a column to add a hitobject
+                    empty_columns.remove(random_column)    # Remove the column from the list
+                    x = self.__generate_x_value(random_column)    # Calculate the x value of the hitobject
+                    self.osufile.HitObjects.insert(LeftIndex, [str(x), "192", time, "1", "0", "0:0:0:0:"])    # Insert the hitobject
+                    RightIndex = RightIndex + 1
+
+                LeftIndex = RightIndex  # Move to the next row
+                i = RightIndex
+
+        
         print("Done")
 
-    def get_hitobject_column_index(self, hitobject : list):
+    def __get_hitobject_column_index_list(self, hitobjects : list, LeftIndex : int, RightIndex : int):
+        column_index_list = []
+        for i in range(LeftIndex, RightIndex):
+            column_index = self.__get_hitobject_column_index(hitobjects[i])
+            column_index_list.append(column_index)
+        column_index_list.sort()
+        return column_index_list
+        
+    def __find_ln_in_row(self, hitobjects : list, LeftIndex : int, RightIndex : int):
+        
+        column_blacklist = {}
+        for i in range(LeftIndex, RightIndex):
+            ln_info = {}    # Dictionary to store the long note information
+            if self.__is_note_a_ln(hitobjects[i]):
+                column = self.__get_hitobject_column_index(hitobjects[i])
+                start = self.osufile.HitObjects[i][2]
+                end = (self.osufile.HitObjects[i][5]).split(":")[0]
+                ln_info["LnStartTime"] = int(start)
+                ln_info["LnEndTime"] = int(end)
+                column_blacklist[column] = ln_info
+        return column_blacklist
+
+    def __get_hitobject_column_index(self, hitobject : list):
         key_column = int(self.osufile.Difficulty["CircleSize"])    
         column_index =  math.floor(int(hitobject[0]) * key_column / 512) + 1 # Calculate the column index of the hitobject
         return column_index
 
-    def is_note_a_ln(self, hitobject : list):
+    def __is_note_a_ln(self, hitobject : list):
         if hitobject[3] == "128" :  # check if the hitobject is a long note
             return True
     
-    def generate_x_value(self, column_index : int):
+    def __generate_x_value(self, column_index : int):
         key_column = int(self.osufile.Difficulty["CircleSize"])
         x = math.ceil(int(column_index - 1) * 512 / key_column)    # Calculate the x value of the hitobject
         return x
 
     def __check_ln_stack(self, column_blacklist : dict, column_index : int, time : int):
+
+        isColumnHasLn = False
+
         if column_index in column_blacklist.keys():    # Check if the column is in the blacklist
-            if time >= column_blacklist[column_index]["LnStartTime"] and time <= column_blacklist[column_index]["LnEndTime"]:
-                return True
-        return False
+            LnStartTime = column_blacklist[column_index]["LnStartTime"]
+            LnEndTime = column_blacklist[column_index]["LnEndTime"]
+            isColumnHasLn = (time >= LnStartTime and time <= LnEndTime)    # Check if the column has a long note
+            return isColumnHasLn
     
-    def get_random_column(self,LeftIndex : int, RightIndex : int, column_blacklist : dict):
+    def __get_empty_column(self,LeftIndex : int, RightIndex : int, column_blacklist : dict):
+
         occupied_columns = []
+        empty_columns = []
+        
         column_time = int(self.osufile.HitObjects[LeftIndex][2])
         key_column = int(self.osufile.Difficulty["CircleSize"])
-        # print(column_time)
-        random_column = 0
 
-        empty_columns = []
-
-        for i in range(LeftIndex, RightIndex):
-            column_index = self.get_hitobject_column_index(self.osufile.HitObjects[i])
-            occupied_columns.append(column_index)
+        occupied_columns = self.__get_hitobject_column_index_list(self.osufile.HitObjects, LeftIndex, RightIndex)
 
         for i in range(1, key_column + 1):
             if i not in occupied_columns:
-                if self.__check_ln_stack(column_blacklist, i, column_time):
+                if self.__check_ln_stack(column_blacklist, i, column_time) == True:
                     occupied_columns.append(i)
 
         for i in range(1 , key_column + 1):
             if i not in occupied_columns:
                 empty_columns.append(i)
 
-        if len(empty_columns) != 0: 
-            random_column = rd.choice(empty_columns)    # Randomly select a column
-        
-        # print(f"occupied = {occupied_columns} \nempty = {empty_columns}")
-
-        return random_column
+        empty_columns.sort()
+        return empty_columns
 
 if __name__ == "__main__":
     pass
-        
